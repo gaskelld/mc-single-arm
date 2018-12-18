@@ -8,6 +8,7 @@ SHELL     = /bin/sh
 H      = hms/
 SH      = shms/
 SHARE	  = shared/
+X      = xem/
 
 my_objs = hms_hbook_init.o shms_hbook_init.o \
           target_cans.o \
@@ -16,7 +17,9 @@ my_objs = hms_hbook_init.o shms_hbook_init.o \
 	  $(SHARE)project.o $(SHARE)transp.o $(SHARE)rotate_haxis.o \
 	  $(SHARE)rotate_vaxis.o $(SHARE)locforunt.o $(SHARE)musc.o \
           $(SHARE)musc_ext.o $(SHARE)stringlib.o mt19937.o gauss1.o \
-          loren.o
+          loren.o xsec_model.o $(X)sigmodel_calc.o $(X)target_info.o \
+	  $(X)/f_to_sig.o $(X)bdisnew4he3.o $(X)F1F207.o $(X)y_calc.o \
+          $(X)fy.o $(X)sig_bar_df.o $(X)nform_xem.o
 
 MYOS := $(subst -,,$(shell uname))
 #mess $(MYOS)

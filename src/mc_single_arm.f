@@ -14,10 +14,10 @@ C-______________________________________________________________________________
 	include 'constants.inc'
 
 c Vector (real*4) for hut ntuples - needs to match dimension of variables
-	real*4		shms_hut(21)
+	real*4		shms_hut(23)
 	real*4          shms_spec(58)
 
-	real*4          hms_hut(15)
+	real*4          hms_hut(17)
 c
 	real*8 xs_num,ys_num,xc_sieve,yc_sieve
 	real*8 xsfr_num,ysfr_num,xc_frsieve,yc_frsieve
@@ -73,6 +73,8 @@ C Initial and reconstructed track quantities.
 	real*8 fry,fr1,fr2
 	real*8 p_spec,th_spec			!spectrometer setting
 	real*8 resmult
+
+	real*8 xsec,xbj
 
 C Control flags (from input file)
 	integer*4 ispec
@@ -642,6 +644,8 @@ C Compute sums for calculating reconstruction variances.
 	    dth_var(2) = dth_var(2) + (dth_recon - dth_init)**2
 	    dph_var(2) = dph_var(2) + (dph_recon - dph_init)**2
 	    ztg_var(2) = ztg_var(2) + (ztar_recon - ztar_init)**2
+	    call xsec_model(ispec,10.6,p_spec,th_spec,dpp_init,
+     >           dth_init/1000.0,dph_init/1000.0,xbj,xsec)
 	 endif			!Incremented the arrays
 
 
@@ -677,6 +681,8 @@ C for spectrometer ntuples
 		  shms_hut(19)= xc_frsieve
 		  shms_hut(20)= yc_frsieve
 	       endif
+	       shms_hut(22)=xbj
+	       shms_hut(23)=xsec
 	       call hfn(1411,shms_hut)
 	    endif
 	 endif
@@ -702,6 +708,8 @@ C for spectrometer ntuples
 	       else
 		  hms_hut(15)=99
 	       endif
+	       hms_hut(16)=xbj
+	       hms_hut(17)=xsec
 	       call hfn(1,hms_hut)
 	    endif
 	 endif

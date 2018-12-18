@@ -1,4 +1,5 @@
-      subroutine xsec_model(ispec,ebeam,pcent,thcent,delta,yptar,xptar,xsec)
+      subroutine xsec_model(ispec,ebeam,pcent,thcent,delta,yptar,xptar,
+     > xbj,xsec)
 
       implicit none
 
@@ -33,11 +34,13 @@
 
       thetalab=acos(plabz/p)
 
-      qabs=sqrt((plabx**2+plaby**2+plabz**2))
+      qabs=sqrt((plabx**2+plaby**2+(ebeam-plabz)**2))
+c      write(6,*) 'bad kitty',plabx,plaby,plabz
       nu=Ebeam-p
       q2=qabs**2-nu**2
       wsq=-q2+mp**2+2.*mp*nu
       xbj=q2/2./mp/nu
+c      write(6,*) 'cheesy poofs',thetalab*raddeg,nu,q2,xbj
 
 C Carbon target, 1.5%
       A=12.0
@@ -47,7 +50,7 @@ C Carbon target, 1.5%
      >              sig_qe,sigtot) !nb/sr/MeV
 
 
-      xsec=1.0
+      xsec=sigtot
       return
       end
 
