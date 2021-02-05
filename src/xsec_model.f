@@ -43,9 +43,13 @@ c      write(6,*) 'bad kitty',plabx,plaby,plabz
 c      write(6,*) 'cheesy poofs',thetalab*raddeg,nu,q2,xbj
 
 C Carbon target, 1.5%
-      A=12.0
-      Z=6.0
-      m_tgt=12.0*0.931494
+c      A=12.0
+c      Z=6.0
+c      m_tgt=12.0*0.931494
+
+      A=2.0
+      Z=1.0
+      m_tgt=2.013550*0.931494
       call sigmodel_calc(ebeam,p,thetalab*raddeg,z,a,m_tgt,sig_dis,
      >              sig_qe,sigtot) !nb/sr/MeV
 
