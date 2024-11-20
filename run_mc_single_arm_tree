@@ -2,6 +2,7 @@
 cd src
 ./mc_single_arm << endofinput >! ../runout/$1.out
 $1
+$2
 endofinput
 cd ../util/root_tree
 ./make_root_tree << endofinput

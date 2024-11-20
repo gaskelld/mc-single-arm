@@ -75,8 +75,12 @@ C Initial and reconstructed track quantities.
 	real*8 dpp_recon,dth_recon,dph_recon,ztar_recon,ytar_recon
 	real*8 x_fp,y_fp,dx_fp,dy_fp		!at focal plane
 	real*8 fry,fr1,fr2
-	real*8 p_spec,th_spec			!spectrometer setting
+	real*8 p_spec,th_spec,phi_spec			!spectrometer setting
 	real*8 resmult
+
+	real*8 ptot
+	real*8 px_gen,py_gen,pz_gen,px_vert,py_vert,pz_vert,zgen
+	real*8 ux,uy,uz,ux0,uy0,uz0,cos_dtheta,y_event
 
 C Control flags (from input file)
 	integer*4 ispec
@@ -115,6 +119,11 @@ C Function definitions.
 	parameter(zero=0.0)
 
 	integer ivar
+
+	integer GetNumBranches
+	external GetNumBranches
+	integer GetNtEntries
+	external GetNtEntries 
 
 	save		!Remember it all!
 
@@ -230,7 +239,7 @@ C Define HBOOK/NTUPLE filename if used.
 C Open Output file.
 	filename = '../outfiles/'//rawname(1:last_char(rawname))//'.out'
 	open (unit=chanout,status='unknown',file=filename)
-
+	
 C Read in real*8's from setup file
 
 	str_line = '!'
@@ -243,13 +252,13 @@ C Strip off header
 
 ! Read data lines.
 
-	write(*,*),str_line(1:last_char(str_line))
-	iss = rd_int(str_line,n_trials)
-	if (.not.iss) stop 'ERROR (ntrials) in setup!'
+c	write(*,*),str_line(1:last_char(str_line))
+c	iss = rd_int(str_line,n_trials)
+c	if (.not.iss) stop 'ERROR (ntrials) in setup!'
 
 ! Spectrometer flag:
-	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+c	read (chanin,1001) str_line
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_int(str_line,ispec)
 	if (.not.iss) stop 'ERROR (Spectrometer selection) in setup!'
 ! Open HBOOK/NTUPLE file here
@@ -266,13 +275,13 @@ C Strip off header
 
 ! Spectrometer momentum:
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,p_spec)
 	if (.not.iss) stop 'ERROR (Spec momentum) in setup!'
 
 ! Spectrometer angle:
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,th_spec)
 	if (.not.iss) stop 'ERROR (Spec theta) in setup!'
 	th_spec = abs(th_spec) / degrad
@@ -280,127 +289,129 @@ C Strip off header
 	sin_ts = sin(th_spec)
 
 ! M.C. limits (half width's for dp,th,ph, full width's for x,y,z)
-	do i=1,3
-	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
-	  iss = rd_real(str_line,gen_lim(i))
-	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
-	  gen_lim_down(i) = gen_lim(i)
-	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
-	  iss = rd_real(str_line,gen_lim(i))
-	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
-	  gen_lim_up(i) = gen_lim(i)
-	enddo
-
+C DJG: should not be needed - events already generated
+c	do i=1,3
+c	  read (chanin,1001) str_line
+c	  write(*,*),str_line(1:last_char(str_line))
+c	  iss = rd_real(str_line,gen_lim(i))
+c	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
+c	  gen_lim_down(i) = gen_lim(i)
+c	  read (chanin,1001) str_line
+c	  write(*,*),str_line(1:last_char(str_line))
+c	  iss = rd_real(str_line,gen_lim(i))
+c	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
+c	  gen_lim_up(i) = gen_lim(i)
+c	enddo
+c
 	do i = 4,6
 	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
+	  write(*,*) str_line(1:last_char(str_line))
 	  iss = rd_real(str_line,gen_lim(i))
 	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
 	enddo
-
-! Raster size
+c
+c! Raster size
 	do i=7,8
 	   read (chanin,1001) str_line
-	   write(*,*),str_line(1:last_char(str_line))
+	   write(*,*) str_line(1:last_char(str_line))
 	   iss = rd_real(str_line,gen_lim(i))
 	   if (.not.iss) stop 'ERROR (Fast Raster) in setup'
 	enddo
-
-! Cuts on reconstructed quantities
-	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
-	if (.not.rd_real(str_line,cut_dpp)) 
-     > stop 'ERROR (CUT_DPP) in setup!'
-
-	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
-	if (.not.rd_real(str_line,cut_dth)) 
-     > stop 'ERROR (CUT_DTH) in setup!'
-
-	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
-	if (.not.rd_real(str_line,cut_dph)) 
-     > stop 'ERROR (CUT_DPH) in setup!'
-
-	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
-	if (.not.rd_real(str_line,cut_z)) 
-     > stop 'ERROR (CUT_Z) in setup!'
-
+c
+c! Cuts on reconstructed quantities
+c	read (chanin,1001) str_line
+c	write(*,*),str_line(1:last_char(str_line))
+c	if (.not.rd_real(str_line,cut_dpp)) 
+c     > stop 'ERROR (CUT_DPP) in setup!'
+c
+c	read (chanin,1001) str_line
+c	write(*,*),str_line(1:last_char(str_line))
+c	if (.not.rd_real(str_line,cut_dth)) 
+c     > stop 'ERROR (CUT_DTH) in setup!'
+c
+c	read (chanin,1001) str_line
+c	write(*,*),str_line(1:last_char(str_line))
+c	if (.not.rd_real(str_line,cut_dph)) 
+c     > stop 'ERROR (CUT_DPH) in setup!'
+c
+c	read (chanin,1001) str_line
+c	write(*,*),str_line(1:last_char(str_line))
+c	if (.not.rd_real(str_line,cut_z)) 
+c     > stop 'ERROR (CUT_Z) in setup!'
+c
 ! Read in radiation length of target material in cm
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,rad_len_cm)) 
      > stop 'ERROR (RAD_LEN_CM) in setup!'
 
 ! Beam and target offsets
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,xoff)
 	if(.not.iss) stop 'ERROR (xoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,yoff)
 	if(.not.iss) stop 'ERROR (yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,zoff)
 	if(.not.iss) stop 'ERROR (zoff) in setup!'
 
 ! Spectrometer offsets
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_xoff)
 	if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_yoff)
 	if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_zoff)
 	if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_xpoff)
 	if(.not.iss) stop 'ERROR (spect. xpoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_ypoff)
 	if(.not.iss) stop 'ERROR (spect. ypoff) in setup!'
 
 ! read in flag for particle type.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,p_flag)) 
      > stop 'ERROR: p_flag in setup file!'
 
 
 ! Read in flag for multiple scattering.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: ms_flag in setup file!'
 	if (tmp_int.eq.1) ms_flag = .true.
 
 ! Read in flag for wire chamber smearing.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: wcs_flag in setup file!'
 	if (tmp_int.eq.1) wcs_flag = .true.
 
 ! Read in flag to keep all events - success or not
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+C	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: store_all in setup file!'
 	if (tmp_int.eq.1) store_all = .true.
@@ -408,29 +419,39 @@ C Strip off header
 !     Read in flag for 'beam energy(MeV)' to trigger on elastic event if present
       beam_energy=-0.1  !by default do not use elastic event generator
       tar_atom_num=12.  !by default it is carbon
-      read (chanin,1001,end=1000,err=1000) str_line
-      write(*,*),str_line(1:last_char(str_line))
-      iss = rd_real(str_line,beam_energy)
+c      read (chanin,1001,end=1000,err=1000) str_line
+c      write(*,*),str_line(1:last_char(str_line))
+c      iss = rd_real(str_line,beam_energy)
       
 ! Read in flag to use sieve
-	read (chanin,1001,end=1000,err=1000) str_line
-	write(*,*),str_line(1:last_char(str_line))
-	if (.not.rd_int(str_line,tmp_int)) 
-     > stop 'ERROR: use_sieve in setup file!'
-	if (tmp_int.eq.1) then
-	  if (ispec.eq.1) use_sieve=.true.
-	  if (ispec.eq.2) use_sieve=.true.
-	  if (ispec.eq.2) use_front_sieve=.false.
-	endif
-
+c	read (chanin,1001,end=1000,err=1000) str_line
+c	write(*,*) str_line(1:last_char(str_line))
+c	if (.not.rd_int(str_line,tmp_int)) 
+c     > stop 'ERROR: use_sieve in setup file!'
+c	if (tmp_int.eq.1) then
+c	  if (ispec.eq.1) use_sieve=.true.
+c	  if (ispec.eq.2) use_sieve=.true.
+c	  if (ispec.eq.2) use_front_sieve=.false.
+c	endif
+	use_sieve=.false.
+	
 !     Read in flag for 'target atomic number (Z+N)' for elastic event if present
-      read (chanin,1001,end=1000,err=1000) str_line
-      write(*,*),str_line(1:last_char(str_line))
-      iss = rd_real(str_line,tar_atom_num)
+c      read (chanin,1001,end=1000,err=1000) str_line
+c      write(*,*) str_line(1:last_char(str_line))
+c      iss = rd_real(str_line,tar_atom_num)
 
 
  1000	continue
 
+	write(*,*)'Enter root tree name with generated events (assumed to be in generated_events dir)'
+	read(*,1969) rawname
+ 1969	format(a)
+	filename = '../generated_events/'//rawname(1:last_char(rawname))//'.root'
+	call InitRootNT(filename,'UPDATE');
+	write(6,*) 'opening root tree with generated events'
+	write(6,*) GetNumBranches(),' branches'
+
+	
 C Set particle masses.
 	m2 = me2			!default to electron
 	if(p_flag.eq.0) then
@@ -448,18 +469,13 @@ C Set particle masses.
 C------------------------------------------------------------------------------C
 C                           Top of Monte-Carlo loop                            C
 C------------------------------------------------------------------------------C
-
-	stime = secnds(zero)
-
-! TH - use "Itrial" instead of "trial" for gfortran. Somehow the stringlib.f
-! function does not type cast string to integer otherwise.
-          itime=time8()
-   	  call ctime(itime,timestring)
-	  write(6,*) 'Using random seed based on clock time'
-          write(6,*) 'Starting random number seed: ',itime
-C DJG - If you want to use default (fixed) seed, comment out the line below
-          call sgrnd(itime)
-
+        call TagNtBranch(px_gen,'GSE_px ')
+	call TagNtBranch(py_gen,'GSE_py ')
+	call TagNtBranch(pz_gen,'GSE_pz ')
+	call TagNtBranch(zgen,'GV_z ')
+C   open root tree, and cycle over events
+	n_trials = GetNtEntries()
+	write(6,*) 'Number of generated events: ', n_trials
 	do Itrial = 1,n_trials
 	   if(ispec.eq.1) then
 	      armSTOP_successes=hSTOP_successes
@@ -469,42 +485,19 @@ C DJG - If you want to use default (fixed) seed, comment out the line below
 	  if(mod(Itrial,5000).eq.0) write(*,*)'event #: ',
      >Itrial,'       successes: ',armSTOP_successes
 
+c get electron info from root tree	  
+	  call ReadNtBranch(Itrial)
+c convert to MeV	  
+	  px_gen=px_gen*1000.0
+	  py_gen=py_gen*1000.0
+	  pz_gen=pz_gen*1000.0
+	  z=zgen
+	  
+c generate x/y from instrimcic beam size	  
+	  x = gauss1(th_nsig_max) * gen_lim(4) / 6.0 !beam width
+	  y = gauss1(th_nsig_max) * gen_lim(5) / 6.0 !beam height
 
-	  irnd=Itrial
-
-C Pick starting point within target. Z is picked uniformly, X and Y are
-C chosen as truncated gaussians, using numbers picked above.
-C Units are cm.
-
-! TH - use a double precision for random number generation here.
-	  x = gauss1(th_nsig_max) * gen_lim(4) / 6.0	!beam width
-	  y = gauss1(th_nsig_max) * gen_lim(5) / 6.0	!beam height
-
-          if(gen_lim(6).gt.0) then                      
-	     z = (grnd() - 0.5) * gen_lim(6)		!along target
-
-          elseif(gen_lim(6).eq.-3) then                 !optics1: three foils
-             foil_nm=3*grnd()-1.5                       !20um foils;  z=0, +/- 10cm
-             foil_nm=anint(foil_nm)                     != -1, 0, 1
-	     foil_zcent = foil_nm * 10
-	     z = (grnd() - 0.5) * foil_tk+ foil_nm * 10
-
-          elseif(gen_lim(6).eq.-2) then                 !optics2: two foils
-             foil_nm=grnd()                             !20um foils; z= +/- 5cm
-             foil_nm=anint(foil_nm)                     != 0, 1
-	     foil_zcent = foil_nm * 5
-	     z = (grnd() - 0.5) * foil_tk - 5+ foil_nm * 10
-	  elseif(gen_lim(6).eq.-5) then
-            foil_nm=5*grnd()-2.5                       ! pol target optics
-             foil_nm=anint(foil_nm)                     !=
-	     if (foil_nm .eq. -2) foil_zcent = 20.
-	     if (foil_nm .eq. -1) foil_zcent = 13.34
-	     if (foil_nm .eq. 0)  foil_zcent = 0.0
-	     if (foil_nm .eq. 1) foil_zcent = -20.
-	     if (foil_nm .eq. 2) foil_zcent = -30.
-             z= (grnd() - 0.5) * foil_tk + foil_zcent
-
-          endif
+C Generate x/y from raster	 
 C DJG Assume flat raster
 	  fr1 = (grnd() - 0.5) * gen_lim(7)   !raster x
 	  fr2 = (grnd() - 0.5) * gen_lim(8)   !raster y
@@ -513,36 +506,47 @@ C DJG Assume flat raster
 
 	  x = x + fr1
 	  y = y + fr2
-
+	  
 	  x = x + xoff
 	  y = y + yoff
 	  z = z + zoff
 
+c       convert to spectrometer coordinates
+	  ptot = sqrt(px_gen**2+py_gen**2+pz_gen**2)
+	  px_vert =-py_gen
+	  py_vert = px_gen
+	  pz_vert = pz_gen
+
+	  ux=px_vert/ptot
+	  uy=py_vert/ptot
+	  uz=pz_vert/ptot
+
+	  if(ispec.eq.1) then	!HMS
+	     phi_spec=3.0*pi/2.0
+	  elseif (ispec.eq.2) then
+	     phi_spec=pi/2.0
+	  endif
+	  ux0=sin(th_spec)*cos(phi_spec)
+	  uy0=sin(th_spec)*sin(phi_spec)
+	  uz0=cos(th_spec)
+
+	  cos_dtheta = ux*ux0 + uy*uy0 + uz*uz0
+	  dxdz = ux/cos_dtheta
+	  dydz = sqrt(1.0/cos_dtheta**2-1.0-dxdz**2)
+	  y_event = uy/cos_dtheta
+	  if (y_event .lt. uy0) dydz = -dydz
+	  
+	  dpp = (ptot/p_spec-1.0)*100.0
+
 C Pick scattering angles and DPP from independent, uniform distributions.
 C dxdz and dydz in HMS TRANSPORT coordinates.
 
-	  dpp  = grnd()*(gen_lim_up(1)-gen_lim_down(1))
-     &             + gen_lim_down(1)
-	  dydz = grnd()*(gen_lim_up(2)-gen_lim_down(2))
-     &          /1000.   + gen_lim_down(2)/1000.
-	  dxdz = grnd()*(gen_lim_up(3)-gen_lim_down(3))
-     &          /1000.   + gen_lim_down(3)/1000.
-
-C Calculate for the elastic energy calibration using the beam energy.
-	  if(beam_energy.gt.0) then
-	     if(ispec.eq.2) then ! SHMS
-		theta_sc = acos((cos_ts-dydz*sin_ts)/sqrt(1. + dxdz**2. + dydz**2.))
-	     elseif(ispec.eq.1) then ! HMS
-		theta_sc = acos((cos_ts+dydz*sin_ts)/sqrt(1. + dxdz**2. + dydz**2.))
-	     else
-		write(6,*) 'Elastic scattering not set up for your spectrometer' 
-		STOP
-	     endif
-	     tar_mass = tar_atom_num*931.5 !carbon
-	     el_energy = tar_mass*beam_energy/(tar_mass+2.*beam_energy*(sin(theta_sc/2.))**2)
-	     dpp = (el_energy-p_spec)/p_spec*100.
-	  endif
-
+c	  dpp  = grnd()*(gen_lim_up(1)-gen_lim_down(1))
+c     &             + gen_lim_down(1)
+c	  dydz = grnd()*(gen_lim_up(2)-gen_lim_down(2))
+c     &          /1000.   + gen_lim_down(2)/1000.
+c	  dxdz = grnd()*(gen_lim_up(3)-gen_lim_down(3))
+c     &          /1000.   + gen_lim_down(3)/1000.
 
 	  if(ispec.eq.2) then ! SHMS
 C Transform from target to SHMS (TRANSPORT) coordinates.
@@ -643,27 +647,6 @@ C   5 mil Mylar (X0=28.7 cm)
 c
 	  if (ms_flag ) call musc(m2,p_spec*(1.+dpp_s/100.),
      > musc_targ_len,dydz_s,dxdz_s)
-
-!-----------------------------------------------------------------------------
-! TH - START TARGET APERTURE TESTS
-! ----------------------------------------------------------------------------
-! This is for SHMS only
-! Restore xs to values at pivot. 
-!	   xs = x_transp
-!	   ys = y_transp
-	  x_a = 0
-	  y_a = 2.99 !cm
-	  z_a = 57.2 !cm
-
-	  dydz_a = (y_a-ytar_init)/(z_a-ztar_init)
-	  dydz_aa = atan(dydz_a)
-
-! Check target aperture, at about 0.572 meter
-! theta_a = lower limit of aperture window
-! theta_s = scattering angle (=spectrometer angle + position)
-! The difference between the scattering and the limiting angle of the
-! window for a given central spectrometer angle.
-	  dif_a = (th_spec*1000+dth_init-dydz_aa*1000)  ! mrad
 
 ! ----------------------------------------------------------------------------
 	  if(ispec.eq.2) then
@@ -796,7 +779,8 @@ C Loop for remainder of trials.
 
 500	  continue
 
-	enddo				!End of M.C. loop
+	enddo			!End of M.C. loop
+	call RootNTOutp();      !close root file
 
 C------------------------------------------------------------------------------C
 C                           End of Monte-Carlo loop                            C

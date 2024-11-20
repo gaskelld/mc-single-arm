@@ -218,7 +218,6 @@ C ================================ Executable Code =============================
 
 
 ! Save spectrometer coordinates.
-
 	xs = x
 	ys = y
 	zs = z
