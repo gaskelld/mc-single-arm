@@ -1,6 +1,6 @@
 !------------------------------------------------------------------------------
 ! Input file for mc_single_arm 					11/15/2024
-! NPS version - events already generated
+! NPS version - using pre-generated events
 !------------------------------------------------------------------------------
         1       Spectrometer (1=HMS, 2=SHMS, 3=..)
      2200.0	Spectrometer momentum (in MeV/c)
