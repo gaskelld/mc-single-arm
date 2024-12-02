@@ -448,26 +448,30 @@ C fit track to give new focal plane values, use LFIT from GENLIB
 	dy_fp = dble(dyfp4)
 
 C at last cathode foil of second drift chamber set, drift to aerogel
-
+c DJG: aerogel not installed - just change all radw values to air 
 	drift = haer_zentrance - hdc_2_zpos - 0.5*hdc_nr_plan*hdc_del_plane
 	radw = drift/hair_radlen
 	call project(xs,ys,drift,decay_flag,dflag,m2,p,pathlen)	!drift and decay
 	if(ms_flag) call musc_ext(m2,p,radw,drift,dydzs,dxdzs,ys,xs)
 
-	radw = haer_entr_thick/haer_entr_radlen
+c	radw = haer_entr_thick/haer_entr_radlen
+	radw = haer_entr_thick/hair_radlen
 	if(ms_flag) call musc(m2,p,radw,dydzs,dxdzs)
 
 	drift = haer_thick
-	radw = drift/haer_radlen
+c	radw = drift/haer_radlen
+	radw = drift/hair_radlen
 	call project(xs,ys,drift,decay_flag,dflag,m2,p,pathlen)	!drift and decay
 	if(ms_flag) call musc_ext(m2,p,radw,drift,dydzs,dxdzs,ys,xs)
 
 	drift = haer_air_thick
-	radw = drift/haer_air_radlen
+c	radw = drift/haer_air_radlen
+	radw = drift/hair_radlen
 	call project(xs,ys,drift,decay_flag,dflag,m2,p,pathlen)	!drift and decay
 	if(ms_flag) call musc_ext(m2,p,radw,drift,dydzs,dxdzs,ys,xs)
 
-	radw = haer_exit_thick/haer_exit_radlen
+c	radw = haer_exit_thick/haer_exit_radlen
+	radw = haer_exit_thick/hair_radlen
 	if(ms_flag) call musc(m2,p,radw,dydzs,dxdzs)
 
 C at aerogel exit, drift to hodoscopes

@@ -830,6 +830,9 @@ C for spectrometer ntuples
 	       hms_hut(8)= dth_recon
 	       hms_hut(9)= dpp_recon
 	       hms_hut(10)=hSTOP_id
+	       hms_hut(11)=px_lab
+	       hms_hut(12)=py_lab
+	       hms_hut(13)=pz_lab
 	       do ivar=1,NtupleSize
 		  write(NtupleIO) hms_hut(ivar)
 	       enddo
