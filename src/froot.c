@@ -24,6 +24,7 @@ extern "C" {
   void reinitrootnt_(const char *access, int laccess);
   void addntbranch_(double *element, const char *chtag, int ltag);
   void tagntbranch_(double *element, const char *chtag, int ltag);
+  void tagntbranchint_(int *element, const char *chtag, int ltag);
   void tagmcntbranch_(double *element, const char *chtag, int ltag);
   void fillntbranch_(const char *chtag, int ltag);
   void readntbranch_(int *ievent);
@@ -230,6 +231,15 @@ void fillntbranch_(const char *chtag, int ltag)
 
 //------------------------------------------------------------------------
 void tagntbranch_(double *element, const char *chtag, int ltag)
+ //Set pointer element to variable name chtag. Do this for each variable you want from
+ // the tree
+{
+  nt->SetBranchAddress(truestr(chtag,ltag),element);
+  return;
+}//tagntbranch_ ->
+
+//------------------------------------------------------------------------
+void tagntbranchint_(int *element, const char *chtag, int ltag)
  //Set pointer element to variable name chtag. Do this for each variable you want from
  // the tree
 {

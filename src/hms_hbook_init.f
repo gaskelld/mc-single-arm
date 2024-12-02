@@ -6,18 +6,15 @@ C
       include 'hbook.inc'
       character*80 filename
       logical spec_ntuple
-      character*16	hut_nt_names(23)/
-     >     'hsxfp', 'hsyfp', 'hsxpfp', 'hsypfp',
-     >     'hsxtari','hsytari','hsxptari','hsyptari',
-     >     'hsztari','hsdeltai','hsytar','hsxptar',
-     >     'hsyptar','hsztar','hsdelta','fry',
-     >     'xsnum','ysnum','xsieve','ysieve','stop_id',
-     >     'hsvxi','hsvyi' /
+      character*16	hut_nt_names(10)/
+     >    'eventnumber','hsxfp', 'hsyfp', 'hsxpfp', 'hsypfp',
+     >     'hsytar','hsxptar','hsyptar','hsdelta',
+     >     'hms_stop_id'/
 
       integer*4 i
 
       NtupleIO=30
-      NtupleSize=23
+      NtupleSize=10
 
       open(NtupleIO,file=filename,form="unformatted",access="sequential")
 

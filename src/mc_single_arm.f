@@ -86,6 +86,7 @@ C Initial and reconstructed track quantities.
 	real*8 bproton,bair,bal,bkevlar,bmylar,bt_tot
 	real*8 Lair,Lal,Lkevlar,Lmylar
 	real*8 ranphot,deltaE
+	integer evtnumber
 
 C Control flags (from input file)
 	integer*4 ispec
@@ -238,9 +239,9 @@ C Open setup file.
 	open(unit=chanin,status='old',file=filename)
 
 C Define HBOOK/NTUPLE filename if used.
-c	if (hut_ntuple) then
-c	  hbook_filename = '../worksim/'//rawname(1:last_char(rawname))//'.bin'
-c	endif
+	if (hut_ntuple) then
+	  hbook_filename = '../worksim/'//rawname(1:last_char(rawname))//'.bin'
+	endif
 C Open Output file.
 	filename = '../outfiles/'//rawname(1:last_char(rawname))//'.out'
 	open (unit=chanout,status='unknown',file=filename)
@@ -267,16 +268,16 @@ c	read (chanin,1001) str_line
 	iss = rd_int(str_line,ispec)
 	if (.not.iss) stop 'ERROR (Spectrometer selection) in setup!'
 ! Open HBOOK/NTUPLE file here
-c	if(hut_ntuple) then
-c	   if(ispec.eq.2) then
-c	      call shms_hbook_init(hbook_filename,spec_ntuple)
-c	   elseif(ispec.eq.1) then
-c	      call hms_hbook_init(hbook_filename,spec_ntuple)
-c	   else
-c	      write(6,*) 'Uknown spectrometer, stopping.'
-c	      stop
-c	   endif
-c	endif
+	if(hut_ntuple) then
+	   if(ispec.eq.2) then
+	      call shms_hbook_init(hbook_filename,spec_ntuple)
+	   elseif(ispec.eq.1) then
+	      call hms_hbook_init(hbook_filename,spec_ntuple)
+	   else
+	      write(6,*) 'Uknown spectrometer, stopping.'
+	      stop
+	   endif
+	endif
 
 ! Spectrometer momentum:
 	read (chanin,1001) str_line
@@ -478,18 +479,19 @@ C------------------------------------------------------------------------------C
 	call TagNtBranch(py_gen,'GSE_py ')
 	call TagNtBranch(pz_gen,'GSE_pz ')
 	call TagNtBranch(zgen,'GV_z ')
-	call AddNtBranch(dpp_recon,'hsdelta')
-	call AddNtBranch(dph_recon,'hsxptar')
-	call AddNtBranch(dth_recon,'hsyptar')
-	call AddNtBranch(ytar_recon,'hsytar')
-	call AddNtBranch(x_fp,'hsxfp')
-	call AddNtBranch(dx_fp,'hsxpfp')
-	call AddNtBranch(y_fp,'hsyfp')
-	call AddNtBranch(dy_fp,'hsypfp')
-	call AddNtBranch(px_lab,'MC_RSE_px')
-	call AddNtBranch(py_lab,'MC_RSE_py')
-	call AddNtBranch(pz_lab,'MC_RSE_pz')
-	call AddNtBranch(hms_stop_id,'hms_stop_ID')
+	call TagNtBranchInt(evtnumber,'evtNb ')
+c	call AddNtBranch(dpp_recon,'hsdelta')
+c	call AddNtBranch(dph_recon,'hsxptar')
+c	call AddNtBranch(dth_recon,'hsyptar')
+c	call AddNtBranch(ytar_recon,'hsytar')
+c	call AddNtBranch(x_fp,'hsxfp')
+c	call AddNtBranch(dx_fp,'hsxpfp')
+c	call AddNtBranch(y_fp,'hsyfp')
+c	call AddNtBranch(dy_fp,'hsypfp')
+c	call AddNtBranch(px_lab,'MC_RSE_px')
+c	call AddNtBranch(py_lab,'MC_RSE_py')
+c	call AddNtBranch(pz_lab,'MC_RSE_pz')
+c	call AddNtBranch(hms_stop_id,'hms_stop_ID')
 	
 	Write(6,*) GetNumBranches(),' branches'
 C   open root tree, and cycle over events
@@ -758,95 +760,81 @@ C       calculate the reconstructed quantities (this is the same algorithm as hc
 	 endif			!Incremented the arrays
 
 	 hms_stop_id = hSTOP_ID
-	 call FillNTBranch('hsdelta')
-	 call FillNTBranch('hsxptar')
-	 call FillNTBranch('hsyptar')
-	 call FillNTBranch('hsytar')
-	 call FillNTBranch('hsxfp')
-	 call FillNTBranch('hsxpfp')
-	 call FillNTBranch('hsyfp')
-	 call FillNTBranch('hsypfp')
-	 call FillNTBranch('MC_RSE_px')
-	 call FillNTBranch('MC_RSE_py')
-	 call FillNTBranch('MC_RSE_pz')
-	 call FillNTBranch('hms_stop_ID')
+c	 call FillNTBranch('hsdelta')
+c	 call FillNTBranch('hsxptar')
+c	 call FillNTBranch('hsyptar')
+c	 call FillNTBranch('hsytar')
+c	 call FillNTBranch('hsxfp')
+c	 call FillNTBranch('hsxpfp')
+c	 call FillNTBranch('hsyfp')
+c	 call FillNTBranch('hsypfp')
+c	 call FillNTBranch('MC_RSE_px')
+c	 call FillNTBranch('MC_RSE_py')
+c	 call FillNTBranch('MC_RSE_pz')
+c	 call FillNTBranch('hms_stop_ID')
 
 
 
 C Output NTUPLE entry.
 C This is ugly, but want the option to have different outputs
 C for spectrometer ntuples
-c	 if(ispec.eq.2) then
-c	    if (store_all.OR.(hut_ntuple.AND.ok_spec)) then
-c	       shms_hut(1) = x_fp
-c	       shms_hut(2) = y_fp
-c	       shms_hut(3) = dx_fp
-c	       shms_hut(4) = dy_fp
-c	       shms_hut(5) = ztar_init
-c	       shms_hut(6) = ytar_init
-c	       shms_hut(7) = dpp_init
-c	       shms_hut(8) = dth_init/1000.
-c	       shms_hut(9) = dph_init/1000.
-c	       shms_hut(10) = ztar_recon
-c	       shms_hut(11) = ytar_recon
-c	       shms_hut(12)= dpp_recon
-c	       shms_hut(13)= dth_recon
-c	       shms_hut(14)= dph_recon
-c	       shms_hut(15)= xtar_init
-c	       shms_hut(16)= fry
-c	       if (use_front_sieve) then
-c		  shms_hut(17)= xsfr_num
-c		  shms_hut(18)= ysfr_num
-c		  shms_hut(19)= xc_frsieve
-c		  shms_hut(20)= yc_frsieve
-c	       endif
-c	       if (use_sieve) then
-c		  shms_hut(17)= xs_num
-c		  shms_hut(18)= ys_num
-c		  shms_hut(19)= xc_sieve
-c		  shms_hut(20)= yc_sieve
-c	       endif
-c	       shms_hut(21)= shmsSTOP_id
-c	       shms_hut(22)= x
-c	       shms_hut(23)= y
-c	       do ivar=1,NtupleSize
-c		  write(NtupleIO) shms_hut(ivar)
-c	       enddo
-c	    endif
-c	 endif
-c
-c	 if(ispec.eq.1) then
-c	    if (store_all.OR.(hut_ntuple.AND.ok_spec)) then
-c	       hms_hut(1) = x_fp
-c	       hms_hut(2) = y_fp
-c	       hms_hut(3) = dx_fp
-c	       hms_hut(4) = dy_fp
-c	       hms_hut(5) = xtar_init
-c	       hms_hut(6) = ytar_init
-c	       hms_hut(7) = dph_init/1000.
-c	       hms_hut(8) = dth_init/1000.
-c	       hms_hut(9) = ztar_init
-c	       hms_hut(10)= dpp_init
-c	       hms_hut(11)= ytar_recon
-c	       hms_hut(12)= dph_recon
-c	       hms_hut(13)= dth_recon
-c	       hms_hut(14)= ztar_recon
-c	       hms_hut(15)= dpp_recon
-c	       hms_hut(16)= fry
-c	       if (use_sieve) then
-c		  hms_hut(17)= xs_num
-c		  hms_hut(18)= ys_num
-c		  hms_hut(19)= xc_sieve
-c		  hms_hut(20)= yc_sieve
-c	       endif
-c              hms_hut(21)=hSTOP_id
-c	       hms_hut(22)= x
-c	       hms_hut(23)= y
-c	       do ivar=1,NtupleSize
-c		  write(NtupleIO) hms_hut(ivar)
-c	       enddo
-c	    endif
-c	 endif
+	 if(ispec.eq.2) then
+	    if (store_all.OR.(hut_ntuple.AND.ok_spec)) then
+	       shms_hut(1) = x_fp
+	       shms_hut(2) = y_fp
+	       shms_hut(3) = dx_fp
+	       shms_hut(4) = dy_fp
+	       shms_hut(5) = ztar_init
+	       shms_hut(6) = ytar_init
+	       shms_hut(7) = dpp_init
+	       shms_hut(8) = dth_init/1000.
+	       shms_hut(9) = dph_init/1000.
+	       shms_hut(10) = ztar_recon
+	       shms_hut(11) = ytar_recon
+	       shms_hut(12)= dpp_recon
+	       shms_hut(13)= dth_recon
+	       shms_hut(14)= dph_recon
+	       shms_hut(15)= xtar_init
+	       shms_hut(16)= fry
+	       if (use_front_sieve) then
+		  shms_hut(17)= xsfr_num
+		  shms_hut(18)= ysfr_num
+		  shms_hut(19)= xc_frsieve
+		  shms_hut(20)= yc_frsieve
+	       endif
+	       if (use_sieve) then
+		  shms_hut(17)= xs_num
+		  shms_hut(18)= ys_num
+		  shms_hut(19)= xc_sieve
+		  shms_hut(20)= yc_sieve
+	       endif
+	       shms_hut(21)= shmsSTOP_id
+	       shms_hut(22)= x
+	       shms_hut(23)= y
+	       do ivar=1,NtupleSize
+		  write(NtupleIO) shms_hut(ivar)
+	       enddo
+	    endif
+	 endif
+
+	 if(ispec.eq.1) then
+	    if (store_all.OR.(hut_ntuple.AND.ok_spec)) then
+	       write(6,*) 'cheesy poofs',evtnumber
+	       hms_hut(1) = evtnumber
+	       hms_hut(2) = x_fp
+	       hms_hut(3) = y_fp
+	       hms_hut(4) = dx_fp
+	       hms_hut(5) = dy_fp
+	       hms_hut(6)= ytar_recon
+	       hms_hut(7)= dph_recon
+	       hms_hut(8)= dth_recon
+	       hms_hut(9)= dpp_recon
+	       hms_hut(10)=hSTOP_id
+	       do ivar=1,NtupleSize
+		  write(NtupleIO) hms_hut(ivar)
+	       enddo
+	    endif
+	 endif
 
 
 	 
@@ -857,7 +845,7 @@ C Loop for remainder of trials.
 
 	  
 	enddo			!End of M.C. loop
-	call PrintNT()
+c	call PrintNT()
 	call RootNTOutp()      !close root file
 
 C------------------------------------------------------------------------------C
@@ -866,8 +854,8 @@ C------------------------------------------------------------------------------C
 
 C Close NTUPLE file.
 c
-c	close(NtupleIO)
-c	if (spec_ntuple) close(SPecNtupleIO)
+	close(NtupleIO)
+	if (spec_ntuple) close(SPecNtupleIO)
 
 
 	write (chanout,1002)
