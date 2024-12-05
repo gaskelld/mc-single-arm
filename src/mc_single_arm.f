@@ -507,7 +507,7 @@ C   open root tree, and cycle over events
      >Itrial,'       successes: ',armSTOP_successes
 
 c get electron info from root tree	  
-	  call ReadNtBranch(Itrial)
+	  call ReadNtBranch(Itrial-1)
 c       reset reconstructed components
 	  px_lab=-1.0d10
 	  py_lab=-1.0d10
