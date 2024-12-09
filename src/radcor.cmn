@@ -1,0 +1,10 @@
+	real*8 eprad(300),thrad(100),sigv(100,300),sigrad(100,300),radcor(100,300)
+	real*8 sigvdis(100,300),sigvqe(100,300)
+	real*8 sigrel(100,300),sigrqe(100,300),sigrdis(100,300),coulcor(100,300)
+
+	integer kmax   !number of p-bins
+	integer ntheta !number of theta bins
+	common/radcor/eprad,thrad,sigv,sigrad,radcor,
+     >               sigvdis,sigvqe,
+     >               sigrel,sigrqe,sigrdis,coulcor,
+     >               kmax,ntheta

@@ -15,10 +15,10 @@ C-______________________________________________________________________________
 	include 'hbook.inc'
 
 c Vector (real*4) for hut ntuples - needs to match dimension of variables
-	real*8		shms_hut(23)
+	real*8		shms_hut(26)
 	real*8          shms_spec(59)
 
-	real*8          hms_hut(23)
+	real*8          hms_hut(26)
 c
 	real*8 xs_num,ys_num,xc_sieve,yc_sieve
 	real*8 xsfr_num,ysfr_num,xc_frsieve,yc_frsieve
@@ -99,6 +99,10 @@ C Local  spectrometer varibales
 	real*8 x_s,y_s,z_s
 	real*8 dxdz_s,dydz_s,dpp_s
 
+	real*8 r,jacobian,weight
+	real*8 xbj, xsecv,xsecr
+	real*8 Na,e,cm2toubarn,targ_Matom,targ_thick
+	real*8 targetfac,genvol,normfac,luminosity,nelectrons
 C Function definitions.
 
 	integer*4	last_char
@@ -113,6 +117,9 @@ C Function definitions.
 	real*4  secnds,zero
 
 	parameter(zero=0.0)
+	parameter(Na=6.0221415E23)
+        parameter(e=1.602176E-16) !electron charge in milli-coulombs
+        parameter(cm2toubarn=1.0E30)
 
 	integer ivar
 
@@ -243,13 +250,13 @@ C Strip off header
 
 ! Read data lines.
 
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_int(str_line,n_trials)
 	if (.not.iss) stop 'ERROR (ntrials) in setup!'
 
 ! Spectrometer flag:
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_int(str_line,ispec)
 	if (.not.iss) stop 'ERROR (Spectrometer selection) in setup!'
 ! Open HBOOK/NTUPLE file here
@@ -266,13 +273,13 @@ C Strip off header
 
 ! Spectrometer momentum:
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,p_spec)
 	if (.not.iss) stop 'ERROR (Spec momentum) in setup!'
 
 ! Spectrometer angle:
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,th_spec)
 	if (.not.iss) stop 'ERROR (Spec theta) in setup!'
 	th_spec = abs(th_spec) / degrad
@@ -282,12 +289,12 @@ C Strip off header
 ! M.C. limits (half width's for dp,th,ph, full width's for x,y,z)
 	do i=1,3
 	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
+	  write(*,*) str_line(1:last_char(str_line))
 	  iss = rd_real(str_line,gen_lim(i))
 	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
 	  gen_lim_down(i) = gen_lim(i)
 	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
+	  write(*,*) str_line(1:last_char(str_line))
 	  iss = rd_real(str_line,gen_lim(i))
 	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
 	  gen_lim_up(i) = gen_lim(i)
@@ -295,7 +302,7 @@ C Strip off header
 
 	do i = 4,6
 	  read (chanin,1001) str_line
-	  write(*,*),str_line(1:last_char(str_line))
+	  write(*,*) str_line(1:last_char(str_line))
 	  iss = rd_real(str_line,gen_lim(i))
 	  if (.not.iss) stop 'ERROR (M.C. limits) in setup!'
 	enddo
@@ -303,104 +310,104 @@ C Strip off header
 ! Raster size
 	do i=7,8
 	   read (chanin,1001) str_line
-	   write(*,*),str_line(1:last_char(str_line))
+	   write(*,*) str_line(1:last_char(str_line))
 	   iss = rd_real(str_line,gen_lim(i))
 	   if (.not.iss) stop 'ERROR (Fast Raster) in setup'
 	enddo
 
 ! Cuts on reconstructed quantities
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,cut_dpp)) 
      > stop 'ERROR (CUT_DPP) in setup!'
 
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,cut_dth)) 
      > stop 'ERROR (CUT_DTH) in setup!'
 
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,cut_dph)) 
      > stop 'ERROR (CUT_DPH) in setup!'
 
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,cut_z)) 
      > stop 'ERROR (CUT_Z) in setup!'
 
 ! Read in radiation length of target material in cm
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_real(str_line,rad_len_cm)) 
      > stop 'ERROR (RAD_LEN_CM) in setup!'
 
 ! Beam and target offsets
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,xoff)
 	if(.not.iss) stop 'ERROR (xoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,yoff)
 	if(.not.iss) stop 'ERROR (yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,zoff)
 	if(.not.iss) stop 'ERROR (zoff) in setup!'
 
 ! Spectrometer offsets
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_xoff)
 	if(.not.iss) stop 'ERROR (spect. xoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_yoff)
 	if(.not.iss) stop 'ERROR (spect. yoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_zoff)
 	if(.not.iss) stop 'ERROR (spect. zoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_xpoff)
 	if(.not.iss) stop 'ERROR (spect. xpoff) in setup!'
 
 	read (chanin, 1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	iss = rd_real(str_line,spec_ypoff)
 	if(.not.iss) stop 'ERROR (spect. ypoff) in setup!'
 
 ! read in flag for particle type.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,p_flag)) 
      > stop 'ERROR: p_flag in setup file!'
 
 
 ! Read in flag for multiple scattering.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: ms_flag in setup file!'
 	if (tmp_int.eq.1) ms_flag = .true.
 
 ! Read in flag for wire chamber smearing.
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: wcs_flag in setup file!'
 	if (tmp_int.eq.1) wcs_flag = .true.
 
 ! Read in flag to keep all events - success or not
 	read (chanin,1001) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: store_all in setup file!'
 	if (tmp_int.eq.1) store_all = .true.
@@ -409,12 +416,12 @@ C Strip off header
       beam_energy=-0.1  !by default do not use elastic event generator
       tar_atom_num=12.  !by default it is carbon
       read (chanin,1001,end=1000,err=1000) str_line
-      write(*,*),str_line(1:last_char(str_line))
+      write(*,*) str_line(1:last_char(str_line))
       iss = rd_real(str_line,beam_energy)
       
 ! Read in flag to use sieve
 	read (chanin,1001,end=1000,err=1000) str_line
-	write(*,*),str_line(1:last_char(str_line))
+	write(*,*) str_line(1:last_char(str_line))
 	if (.not.rd_int(str_line,tmp_int)) 
      > stop 'ERROR: use_sieve in setup file!'
 	if (tmp_int.eq.1) then
@@ -425,7 +432,7 @@ C Strip off header
 
 !     Read in flag for 'target atomic number (Z+N)' for elastic event if present
       read (chanin,1001,end=1000,err=1000) str_line
-      write(*,*),str_line(1:last_char(str_line))
+      write(*,*) str_line(1:last_char(str_line))
       iss = rd_real(str_line,tar_atom_num)
 
 
@@ -703,6 +710,8 @@ c            if (ok_spec) spec(58) =1.
 	    ztar_recon = + y_s / sin_ts 
             ytar_recon = y_s
 
+	    r = sqrt(1.+(dth_init/1000.0)**2+(dph_init/1000.0)**2)
+	    jacobian = 1.0/r**3
 C Compute sums for calculating reconstruction variances.
 	    dpp_var(1) = dpp_var(1) + (dpp_recon - dpp_init)
 	    dth_var(1) = dth_var(1) + (dth_recon - dth_init)
@@ -713,6 +722,11 @@ C Compute sums for calculating reconstruction variances.
 	    dth_var(2) = dth_var(2) + (dth_recon - dth_init)**2
 	    dph_var(2) = dph_var(2) + (dph_recon - dph_init)**2
 	    ztg_var(2) = ztg_var(2) + (ztar_recon - ztar_init)**2
+	    call xsec_model(ispec,10.7,p_spec,th_spec,dpp_init,
+     >           dth_init/1000.0,dph_init/1000.0,xbj,xsecv,xsecr)
+	    r = sqrt(1.+(dth_init/1000.0)**2+(dph_init/1000.0)**2)
+	    jacobian = 1.0/r**3 ! small correction for transormation from Cartesian to spherical angles
+	    weight=xsecr*jacobian
 	 endif			!Incremented the arrays
 
 
@@ -752,6 +766,9 @@ C for spectrometer ntuples
 	       shms_hut(21)= shmsSTOP_id
 	       shms_hut(22)= x
 	       shms_hut(23)= y
+	       shms_hut(24)= xsecv
+	       shms_hut(25)= xsecr
+	       shms_hut(26)= weight
 	       do ivar=1,NtupleSize
 		  write(NtupleIO) shms_hut(ivar)
 	       enddo
@@ -785,6 +802,9 @@ C for spectrometer ntuples
                hms_hut(21)=hSTOP_id
 	       hms_hut(22)= x
 	       hms_hut(23)= y
+	       hms_hut(24)= xsecv
+	       hms_hut(25)= xsecr
+	       hms_hut(26) =weight
 	       do ivar=1,NtupleSize
 		  write(NtupleIO) hms_hut(ivar)
 	       enddo
@@ -888,6 +908,22 @@ C Compute reconstruction resolutions.
      >		t2,dph_var(1)/armSTOP_successes,t3,
      > ztg_var(1)/armSTOP_successes,t4
 
+
+c       hardwire this for now
+	targ_Matom=2.014102076
+	targ_thick=gen_lim(6)*0.16743 ! g/cm2
+	targetfac = targ_thick*Na/targ_Matom/cm2toubarn
+	nelectrons = 1.0/e	!1 mC of electrons
+
+
+	genvol = (p_spec/1000.0)*(gen_lim_up(1)-gen_lim_down(1))/100.0 !delta -> \deltaE
+	genvol=genvol*(gen_lim_up(2)-gen_lim_down(2))/1000.0 ! yprime
+	genvol=genvol*(gen_lim_up(3)-gen_lim_down(3))/1000.0 ! xprime
+	luminosity = nelectrons*targetfac
+	normfac = nelectrons*targetfac*genvol/n_trials !sr*GeV/ub
+	write(6,*) 'generation volume (GeV*sr): ',genvol
+	write(6,*) 'normfac (sr GeV/ub): ',normfac
+	write(chanout,*) 'normfac (sr GeV/ub): ',normfac
 C ALL done!
 
 	stop ' '
