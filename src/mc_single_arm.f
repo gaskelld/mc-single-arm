@@ -79,7 +79,7 @@ C Initial and reconstructed track quantities.
 	real*8 resmult
 
 	real*8 ptot
-	real*8 px_gen,py_gen,pz_gen,px_vert,py_vert,pz_vert,zgen
+	real*8 px_gen,py_gen,pz_gen,px_vert,py_vert,pz_vert,xgen,ygen,zgen
 	real*8 ux,uy,uz,ux0,uy0,uz0,cos_dtheta,y_event
 	real*8 pe_recon,px_spec,py_spec,pz_spec,px_lab,py_lab,pz_lab
 	real*8 hms_stop_id
@@ -478,6 +478,8 @@ C------------------------------------------------------------------------------C
         call TagNtBranch(px_gen,'GSE_px ')
 	call TagNtBranch(py_gen,'GSE_py ')
 	call TagNtBranch(pz_gen,'GSE_pz ')
+	call TagNtBranch(xgen,'GV_x ')
+	call TagNtBranch(ygen,'GV_y ')
 	call TagNtBranch(zgen,'GV_z ')
 	call TagNtBranchInt(evtnumber,'evtNb ')
 c	call AddNtBranch(dpp_recon,'hsdelta')
@@ -521,25 +523,27 @@ c convert to MeV
 	  px_gen=px_gen*1000.0
 	  py_gen=py_gen*1000.0
 	  pz_gen=pz_gen*1000.0
+	  x=xgen
+	  y=ygen
 	  z=zgen
 	  
 c generate x/y from instrimcic beam size	  
-	  x = gauss1(th_nsig_max) * gen_lim(4) / 6.0 !beam width
-	  y = gauss1(th_nsig_max) * gen_lim(5) / 6.0 !beam height
+c	  x = gauss1(th_nsig_max) * gen_lim(4) / 6.0 !beam width
+c	  y = gauss1(th_nsig_max) * gen_lim(5) / 6.0 !beam height
 
 C Generate x/y from raster	 
 C DJG Assume flat raster
-	  fr1 = (grnd() - 0.5) * gen_lim(7)   !raster x
-	  fr2 = (grnd() - 0.5) * gen_lim(8)   !raster y
-
-	  fry = -fr2  !+y = up, but fry needs to be positive when pointing down
-
-	  x = x + fr1
-	  y = y + fr2
-	  
-	  x = x + xoff
-	  y = y + yoff
-	  z = z + zoff
+c	  fr1 = (grnd() - 0.5) * gen_lim(7)   !raster x
+c	  fr2 = (grnd() - 0.5) * gen_lim(8)   !raster y
+c
+c	  fry = -fr2  !+y = up, but fry needs to be positive when pointing down
+c
+c	  x = x + fr1
+c	  y = y + fr2
+c	  
+c	  x = x + xoff
+c	  y = y + yoff
+c	  z = z + zoff
 
 c       convert to spectrometer coordinates
 	  ptot = sqrt(px_gen**2+py_gen**2+pz_gen**2)
