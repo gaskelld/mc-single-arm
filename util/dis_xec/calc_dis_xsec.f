@@ -9,7 +9,7 @@ c     between the model used in MC and the model used to get the "central" verte
       real*8 ebeamin,thetain,q2in,var_min,var_step
       real*8 sigdis,thrad,mp,sin2th
       real*8 Q2,xbj,W,nu
-      real*8 eprime,xsecvert,xsecrad
+      real*8 eprime,xsecvert,xsecvertcc,xsecrad
       integer i,nvarbin,ispec,npbins,nthbins,flag
       character*80 rawname,filename,radfile,xfile
       character*132 str_line
@@ -118,14 +118,14 @@ c         write(6,*) str_line
             W=sqrt(-Q2+mp**2+2.0*mp*nu)
          endif
          
-         call xsec_model(ispec,thrad,eprime,radfile,npbins,nthbins,xsecvert,xsecrad)
+         call xsec_model(ispec,thrad,eprime,radfile,npbins,nthbins,xsecvert,xsecvertcc,xsecrad)
          sigdis=xsecvert
          if(first) then
             write(6,*) 'Eprime    theta      xBj       Q2        W ',
      >        '        Cross section (ub/GeV/sr)'
             first=.false.
          endif
-         write(6,1003) eprime,thetain,xbj,Q2,W,xsecvert
+         write(6,1003) eprime,thetain,xbj,Q2,W,xsecvert,xsecvertcc
       enddo
- 1003 format(1x,f6.4,4x,f7.4,3(4x,f6.4),4x,e11.5)
+ 1003 format(1x,f6.4,4x,f7.4,3(4x,f6.4),4x,e11.5,4x,e11.5)
       end
