@@ -1,11 +1,11 @@
-      subroutine xsec_model(ispec,thetalab,p,radfile,npbins,nthbins,xsecvert,xsecrad)
+      subroutine xsec_model(ispec,thetalab,p,radfile,npbins,nthbins,xsecvert,xsecvertcc,xsecrad)
 
       implicit none
 
       real*8 thetalab,p
       real*8 sig_dis, sig_qe,sigtot
-      real*8 xsecvert,xsecrad,xdum,q2dum,edum
-      real*8 sig_rad_func, sig_vert_func
+      real*8 xsecvert,xsecvertcc,xsecrad,xdum,q2dum,edum
+      real*8 sig_rad_func, sig_vert_func, sig_vert_func_cc
       integer ispec,filelen,i,j,ncomment,npbins,nthbins
       character*80 line,radfile,xfile
       logical first
@@ -62,6 +62,8 @@ c               write(9,*) 'radcor read in:',i,j,eprad(j),thrad(i),radcor(i,j),s
 
       xsecrad=sig_rad_func(p,thetalab)
       xsecvert=sig_vert_func(p,thetalab)
+
+      xsecvertcc=sig_vert_func_cc(p,thetalab)
       
  1005 format(1x,5f9.4,9e13.5)
       return
@@ -247,3 +249,92 @@ c	write(6,*) 'sig_rad_func 2', sig_rad_func
 
 	return
 	end
+
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+      real*8 function sig_vert_func_cc(ep,theta)
+	
+      implicit none
+
+      real*8 ep,theta,thdeg,thtmp,eptmp
+      real*8 thhi,thlo,delta_th
+      real*8 ephi,eplo,delta_ep
+      real*8 A1,A2,A3,A4,A12,A34,A1234
+      real*8 B1,B2,B3,B4,B12,B34,B1234
+      real*8 sig_vert_qe
+      
+      integer thcount,epcount
+
+      include 'radcor.cmn'
+
+
+      thdeg = theta*180.0/3.141592654
+      thtmp = thdeg
+      
+      if(thdeg.lt.thrad(1)) then
+         thtmp=thrad(1)
+         write(6,*) 'WARNING, theta .lt. theta_min: sig_vert'
+      endif
+
+      if(thdeg.gt.thrad(ntheta)) then
+         thtmp=thrad(ntheta)
+         write(6,*) 'WARNING, theta .gt. theta_max: sig_vert',thdeg,thrad(ntheta)
+      endif
+
+      eptmp=ep
+      
+      if(ep.lt.eprad(1)) then
+         eptmp = eprad(1)
+         write(6,*) 'WARNING, EP .lt. ep_min: sig_vert',ep,eprad(1)
+      endif
+
+      if(ep.gt.eprad(kmax)) then
+         eptmp = eprad(kmax)
+         write(6,*) 'WARNING, EP .gt. ep_max: sig_vert'
+      endif
+      
+      
+      do thcount=1,ntheta-1
+         thhi=0.0
+         thlo=0.0
+         ephi=0.0
+         eplo=0.0
+         if( (thtmp.gt.thrad(thcount)) .and. (thtmp.le.thrad(thcount+1)) ) then
+         thhi=thrad(thcount+1)
+         thlo=thrad(thcount)
+         delta_th=thhi-thlo
+         do epcount=1,kmax-1
+            if( (eptmp.gt.eprad(epcount)) .and. (eptmp.le.eprad(epcount+1)) )then
+            ephi=eprad(epcount+1)
+            eplo=eprad(epcount)
+            delta_ep=ephi-eplo
+
+            A1 = coulcor(thcount,epcount)*sigv(thcount,epcount)
+            A2 = coulcor(thcount+1,epcount)*sigv(thcount+1,epcount)
+            A3 = coulcor(thcount,epcount+1)*sigv(thcount,epcount+1)
+            A4 = coulcor(thcount+1,epcount+1)*sigv(thcount+1,epcount+1)
+            
+            A12 = (A1*(thhi-thtmp) + A2*(thtmp-thlo))/delta_th
+            A34 = (A3*(thhi-thtmp) + A4*(thtmp-thlo))/delta_th
+            
+            A1234 = (A12*(ephi-eptmp) + A34*(eptmp-eplo))/delta_ep
+
+            B1 = sigvqe(thcount,epcount)
+            B2 = sigvqe(thcount+1,epcount)
+            B3 = sigvqe(thcount,epcount+1)
+            B4 = sigvqe(thcount+1,epcount+1)
+            
+            B12 = (B1*(thhi-thtmp) + B2*(thtmp-thlo))/delta_th
+            B34 = (B3*(thhi-thtmp) + B4*(thtmp-thlo))/delta_th
+            
+            B1234 = (B12*(ephi-eptmp) + B34*(eptmp-eplo))/delta_ep
+         endif                  !ep check
+      enddo                     !loop over ep
+      endif                     !theta check
+      enddo                     !loop over theta
+
+      sig_vert_func_cc=A1234
+      sig_vert_func_cc=sig_vert_func_cc/1000.0 ! convert to ub I think
+c      sig_vert_qe=B1234/1000.0
+
+      return
+      end

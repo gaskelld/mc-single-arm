@@ -114,7 +114,7 @@ C Function definitions.
 
 	logical do_elastic,do_rctables
 	integer npbins,nthbins
-	real*8 xsecr,xsecv
+	real*8 xsecr,xsecv, xsecvcc
 	real*8 theta_vert,eprime_vert,W_vert,Q2_vert,xb_vert,xi_vert
 	real*8 theta_recon,eprime_recon,W_recon,Q2_recon,xb_recon,xi_recon
 	real*8 weight, jacobian, r, normfac, nelectrons, targetfac, genvol, targ_thick
@@ -752,7 +752,7 @@ c       calculate physics stuff for reconstructed quantities
      >        W_recon,Q2_recon,xb_recon,xi_recon,theta_recon,eprime_recon,ispec)
 c       call with vertex quantities
 	    if(do_rctables) then
-	       call xsec_model(ispec,theta_vert,eprime_vert,radfile,npbins,nthbins,xsecv,xsecr)
+	       call xsec_model(ispec,theta_vert,eprime_vert,radfile,npbins,nthbins,xsecv,xsecvcc,xsecr)
 	       r = sqrt(1.+(dth_init/1000.0)**2+(dph_init/1000.0)**2)
 	       jacobian = 1.0/r**3 ! small correction for transformation from Cartesian to spherical angles
 	       weight=xsecr*jacobian
